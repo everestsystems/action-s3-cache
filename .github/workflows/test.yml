@@ -11,6 +11,7 @@ jobs:
     name: Test on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest, windows-2019]
     steps:
@@ -22,23 +23,8 @@ jobs:
         with:
           go-version: ^1.15.5
 
-      - name: Export vars
-        id: vars
-        shell: bash
-        run: |
-          if [[ "${{ matrix.os }}" == ubuntu-* ]]; then
-            echo "::set-output name=GOOS::linux"
-          elif [[ "${{ matrix.os }}" == macos-* ]]; then
-            echo "::set-output name=GOOS::darwin"
-          else
-            echo "::set-output name=GOOS::windows"
-          fi
-
       - name: Build binary
-        env:
-          GOARCH: amd64
-          GOOS: ${{ steps.vars.outputs.GOOS }}
-        run: go build -o dist/$(echo "${{ runner.os }}" | tr "[:upper:]" "[:lower:]")
+        run: go build -o dist/$(echo "${{ runner.os }}" | tr "[:upper:]" "[:lower:]")-$ARCH
         shell: bash
 
       - name: Create temp files
