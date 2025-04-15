@@ -64,12 +64,3 @@ jobs:
         shell: bash
         run: ls temp
 
-      - name: Delete cache
-        uses: ./
-        with:
-          action: delete
-          aws-region: us-east-1
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID_CACHING }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY_CACHING }}
-          bucket: ${{ vars.AWS_BUCKET_NAME_CACHING }}
-          key: ${{ hashFiles('action.yml') }}-${{ matrix.os }}
