@@ -13,10 +13,30 @@ import (
 	"github.com/pkg/errors"
 )
 
+// newS3Client creates an S3 client with optional custom endpoint support
+func newS3Client() (*s3.Client, error) {
+	cfg, err := config.LoadDefaultConfig(context.TODO())
+	if err != nil {
+		return nil, err
+	}
+
+	endpoint := os.Getenv("ENDPOINT")
+	if endpoint != "" {
+		return s3.NewFromConfig(cfg, func(o *s3.Options) {
+			o.BaseEndpoint = aws.String(endpoint)
+			o.UsePathStyle = true
+		}), nil
+	}
+
+	return s3.NewFromConfig(cfg), nil
+}
+
 // PutObject - Upload object to s3 bucket
 func PutObject(key, bucket, s3Class string) error {
-	cfg, err := config.LoadDefaultConfig(context.TODO())
-	session := s3.NewFromConfig(cfg)
+	client, err := newS3Client()
+	if err != nil {
+		return err
+	}
 
 	file, err := os.Open(key)
 	if err != nil {
@@ -31,7 +51,7 @@ func PutObject(key, bucket, s3Class string) error {
 		StorageClass: types.StorageClass(s3Class),
 	}
 
-	_, err = session.PutObject(context.TODO(), i)
+	_, err = client.PutObject(context.TODO(), i)
 	if err == nil {
 		log.Print("Cache saved successfully")
 	}
@@ -41,10 +61,12 @@ func PutObject(key, bucket, s3Class string) error {
 
 // GetObject - Get object from s3 bucket
 func GetObject(key, bucket string) error {
-	cfg, err := config.LoadDefaultConfig(context.TODO())
-	session := s3.NewFromConfig(cfg)
+	client, err := newS3Client()
+	if err != nil {
+		return err
+	}
 
-	result, err := session.GetObject(context.TODO(), &s3.GetObjectInput{
+	result, err := client.GetObject(context.TODO(), &s3.GetObjectInput{
 		Bucket: aws.String(bucket),
 		Key:    aws.String(key),
 	})
@@ -73,15 +95,17 @@ func GetObject(key, bucket string) error {
 
 // DeleteObject - Delete object from s3 bucket
 func DeleteObject(key, bucket string) error {
-	cfg, err := config.LoadDefaultConfig(context.TODO())
-	session := s3.NewFromConfig(cfg)
+	client, err := newS3Client()
+	if err != nil {
+		return err
+	}
 
 	i := &s3.DeleteObjectInput{
 		Bucket: aws.String(bucket),
 		Key:    aws.String(key),
 	}
 
-	_, err = session.DeleteObject(context.TODO(), i)
+	_, err = client.DeleteObject(context.TODO(), i)
 	if err == nil {
 		log.Print("Cache purged successfully")
 	}
@@ -91,17 +115,17 @@ func DeleteObject(key, bucket string) error {
 
 // ObjectExists - Verify if object exists in s3
 func ObjectExists(key, bucket string) (bool, error) {
-	cfg, err := config.LoadDefaultConfig(context.TODO())
-	session := s3.NewFromConfig(cfg, func(o *s3.Options) {
-		o.UsePathStyle = true
-	})
+	client, err := newS3Client()
+	if err != nil {
+		return false, err
+	}
 
 	i := &s3.HeadObjectInput{
 		Bucket: aws.String(bucket),
 		Key:    aws.String(key),
 	}
 
-	if _, err = session.HeadObject(context.TODO(), i); err != nil {
+	if _, err = client.HeadObject(context.TODO(), i); err != nil {
 		var nsk *types.NotFound
 		if errors.As(err, &nsk) {
 			return false, nil
