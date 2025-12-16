@@ -73,9 +73,26 @@ jobs:
 
       - name: Verify cache restored
         run: |
-          ls temp
+          # Check all files exist
           test -f temp/file.txt
+          test -f temp/dir1/file.txt
+          test -f temp/dir2/file.txt
+          test -f temp/dir3/file.txt
           test -f temp/dir1/subdir1/file.txt
+          test -f temp/dir2/subdir2/file.txt
+          test -f temp/dir3/subdir3/file.txt
+
+          # Verify file contents
+          for f in temp/file.txt temp/dir1/file.txt temp/dir2/file.txt temp/dir3/file.txt \
+                   temp/dir1/subdir1/file.txt temp/dir2/subdir2/file.txt temp/dir3/subdir3/file.txt; do
+            content=$(cat "$f")
+            if [ "$content" != "fileexample" ]; then
+              echo "ERROR: $f has wrong content: $content"
+              exit 1
+            fi
+          done
+
+          echo "All files restored correctly"
 
       - name: Delete cache
         uses: ./
