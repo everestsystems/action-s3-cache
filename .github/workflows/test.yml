@@ -32,15 +32,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - uses: actions/checkout@v4
-        with:
-          repository: everestsystems/infra-tools
-          ref: ${{ vars.INFRA_TOOLS_VERSION }}
-          token: ${{ secrets.GPR_TOKEN }}
-          path: infra-tools
-
       - name: Setup Go
-        uses: ./infra-tools/.github/actions/setup-go/
+        # As this repo is a public fork the public setup-go action is used here instead of our private one
+        uses: actions/setup-go@v5
         with:
           go-version: ${{ needs.setup.outputs.go_version }}
 
