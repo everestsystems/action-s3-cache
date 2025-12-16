@@ -22,6 +22,7 @@ func PutObject(key, bucket, s3Class string) error {
 	if err != nil {
 		return err
 	}
+	// lol
 	defer file.Close()
 
 	i := &s3.PutObjectInput{
