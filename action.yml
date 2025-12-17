@@ -29,6 +29,9 @@ inputs:
     description: "Specifies the desired Storage Class for the object."
     required: false
     default: STANDARD
+  endpoint:
+    description: "Custom S3 endpoint URL (for S3-compatible services like LocalStack)"
+    required: false
 runs:
   using: "composite"
   steps:
@@ -45,3 +48,4 @@ runs:
         ARTIFACTS: ${{ inputs.artifacts }}
         OS: ${{ runner.os }}
         ARCH: ${{ runner.arch }}
+        ENDPOINT: ${{ inputs.endpoint }}

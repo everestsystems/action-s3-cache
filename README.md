@@ -1,9 +1,9 @@
 # S3 Cache for GitHub Actions
-![GitHub Workflow Status](https://img.shields.io/github/workflow/status/leroy-merlin-br/action-s3-cache/Build%20and%20publish?style=flat-square) ![GitHub go.mod Go version](https://img.shields.io/github/go-mod/go-version/leroy-merlin-br/action-s3-cache?style=flat-square) ![Codacy grade](https://img.shields.io/codacy/grade/71fc49e81b654ddfa1379a2c50f6ea8a?style=flat-square)
 
 GitHub Action that allows you to cache build artifacts to S3
 
-It is a fork from [leroy-merlin-br/action-s3-cache]https://github.com/leroy-merlin-br/action-s3-cache.
+Fork from [leroy-merlin-br/action-s3-cache](https://github.com/leroy-merlin-br/action-s3-cache).
+
 Changes:
 - Use tar and untar instead of zip
 - Upgrade golang version
@@ -88,14 +88,12 @@ The following example shows a simple pipeline using S3 Cache GitHub Action:
       node_modules/*
 ```
 
-## Deploy a new version for linux
+## Contributing
 
-- Build the binary 
-```
-env GOOS=linux GOARCH=amd64 go build -o dist/linux
-```
+This action uses pre-compiled Go binaries that are built and committed to version control automatically by CI.
 
-- Push the binary and changes to github
+### Making changes
 
-- Usually is required to update the branch or create a new branch
-
+1. Create a branch and make your code changes to the Go source files
+2. Open a PR targeting `develop`
+3. Once merged, CI will automatically build binaries for all platforms and create a pre-release (`vX.Y.Z-rcN`)
