@@ -1,10 +1,16 @@
 name: Test
+
 on:
-  push:
-    tags-ignore:
-      - "*.*"
+  pull_request:
     branches:
-      - "**"
+      - '*'
+
+env:
+  AWS_ACCESS_KEY_ID: test
+  AWS_SECRET_ACCESS_KEY: test
+  AWS_DEFAULT_REGION: us-east-1
+  LOCALSTACK_ENDPOINT: http://localhost:4566
+  TEST_BUCKET: test-bucket
 
 jobs:
   setup:
@@ -21,13 +27,16 @@ jobs:
           echo "Extracted Go version: $GO_VERSION"
           echo "version=$GO_VERSION" >> "$GITHUB_OUTPUT"
 
-  test_on_machine:
-    needs: setup
-    name: Test on ${{ matrix.os }}
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ubuntu-latest, macos-latest, windows-2019]
+  test:
+    name: Test on Linux
+    runs-on: ubuntu-latest
+    services:
+      localstack:
+        image: localstack/localstack
+        ports:
+          - 4566:4566
+        env:
+          SERVICES: s3
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -38,27 +47,13 @@ jobs:
         with:
           go-version: ${{ needs.setup.outputs.go_version }}
 
-      - name: Export vars
-        id: vars
-        shell: bash
-        run: |
-          if [[ "${{ matrix.os }}" == ubuntu-* ]]; then
-            echo "::set-output name=GOOS::linux"
-          elif [[ "${{ matrix.os }}" == macos-* ]]; then
-            echo "::set-output name=GOOS::darwin"
-          else
-            echo "::set-output name=GOOS::windows"
-          fi
-
       - name: Build binary
-        env:
-          GOARCH: amd64
-          GOOS: ${{ steps.vars.outputs.GOOS }}
-        run: go build -o dist/$(echo "${{ runner.os }}" | tr "[:upper:]" "[:lower:]")
-        shell: bash
+        run: go build -o dist/linux-x64
+
+      - name: Create test bucket
+        run: aws --endpoint-url=${{ env.LOCALSTACK_ENDPOINT }} s3 mb s3://${{ env.TEST_BUCKET }}
 
       - name: Create temp files
-        shell: bash
         run: |
           mkdir -p temp/{dir1,dir2,dir3}/{subdir1,subdir2,subdir3}
           echo "fileexample" > temp/file.txt
@@ -68,38 +63,59 @@ jobs:
         uses: ./
         with:
           action: put
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: us-east-1
-          bucket: ${{ secrets.AWS_BUCKET }}
-          key: ${{ hashFiles('action.yml') }}-${{ matrix.os }}
+          aws-access-key-id: ${{ env.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ env.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_DEFAULT_REGION }}
+          bucket: ${{ env.TEST_BUCKET }}
+          key: test-cache-${{ github.run_id }}
+          endpoint: ${{ env.LOCALSTACK_ENDPOINT }}
           artifacts: |
             temp/*
 
       - name: Remove temp folder
-        shell: bash
         run: rm -rf temp
 
       - name: Get cache
         uses: ./
         with:
           action: get
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: us-east-1
-          bucket: ${{ secrets.AWS_BUCKET }}
-          key: ${{ hashFiles('action.yml') }}-${{ matrix.os }}
+          aws-access-key-id: ${{ env.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ env.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_DEFAULT_REGION }}
+          bucket: ${{ env.TEST_BUCKET }}
+          key: test-cache-${{ github.run_id }}
+          endpoint: ${{ env.LOCALSTACK_ENDPOINT }}
 
-      - name: List cache folder
-        shell: bash
-        run: ls temp
+      - name: Verify cache restored
+        run: |
+          # Check all files exist
+          test -f temp/file.txt
+          test -f temp/dir1/file.txt
+          test -f temp/dir2/file.txt
+          test -f temp/dir3/file.txt
+          test -f temp/dir1/subdir1/file.txt
+          test -f temp/dir2/subdir2/file.txt
+          test -f temp/dir3/subdir3/file.txt
+
+          # Verify file contents
+          for f in temp/file.txt temp/dir1/file.txt temp/dir2/file.txt temp/dir3/file.txt \
+                   temp/dir1/subdir1/file.txt temp/dir2/subdir2/file.txt temp/dir3/subdir3/file.txt; do
+            content=$(cat "$f")
+            if [ "$content" != "fileexample" ]; then
+              echo "ERROR: $f has wrong content: $content"
+              exit 1
+            fi
+          done
+
+          echo "All files restored correctly"
 
       - name: Delete cache
         uses: ./
         with:
           action: delete
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: us-east-1
-          bucket: ${{ secrets.AWS_BUCKET }}
-          key: ${{ hashFiles('action.yml') }}-${{ matrix.os }}
+          aws-access-key-id: ${{ env.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ env.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_DEFAULT_REGION }}
+          bucket: ${{ env.TEST_BUCKET }}
+          key: test-cache-${{ github.run_id }}
+          endpoint: ${{ env.LOCALSTACK_ENDPOINT }}

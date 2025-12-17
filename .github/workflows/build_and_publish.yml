@@ -4,7 +4,6 @@ on:
     tags-ignore:
       - "*.*"
     branches:
-      - main
       - develop
 
 jobs:
@@ -40,9 +39,11 @@ jobs:
 
       - name: Build binary
         run: |
-          env GOOS=linux GOARCH=amd64 go build -o dist/linux
-          env GOOS=windows GOARCH=amd64 go build -o dist/windows
-          env GOOS=darwin GOARCH=amd64 go build -o dist/macos
+          env GOOS=linux GOARCH=amd64 go build -o dist/linux-x64
+          env GOOS=linux GOARCH=arm64 go build -o dist/linux-arm64
+          env GOOS=darwin GOARCH=amd64 go build -o dist/macos-x64
+          env GOOS=darwin GOARCH=arm64 go build -o dist/macos-arm64
+          env GOOS=windows GOARCH=amd64 go build -o dist/windows-x64
 
       - name: Output vars
         id: vars
