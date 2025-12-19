@@ -37,13 +37,8 @@ jobs:
         with:
           go-version: ${{ needs.setup.outputs.go_version }}
 
-      - name: Build binary
-        run: |
-          env GOOS=linux GOARCH=amd64 go build -o dist/linux-x64
-          env GOOS=linux GOARCH=arm64 go build -o dist/linux-arm64
-          env GOOS=darwin GOARCH=amd64 go build -o dist/macos-x64
-          env GOOS=darwin GOARCH=arm64 go build -o dist/macos-arm64
-          env GOOS=windows GOARCH=amd64 go build -o dist/windows-x64
+      - name: Build binaries
+        run: make build
 
       - name: Determine next version
         id: next-version
@@ -58,6 +53,9 @@ jobs:
           fi
 
           echo "next-version=$NEXT_VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Update version references in README
+        run: make update-readme-version VERSION=${{ steps.next-version.outputs.next-version }}
 
       - name: Create tag
         run: |
