@@ -45,20 +45,16 @@ jobs:
           env GOOS=darwin GOARCH=arm64 go build -o dist/macos-arm64
           env GOOS=windows GOARCH=amd64 go build -o dist/windows-x64
 
-      - name: Output vars
-        id: vars
+      - name: Determine next version
+        id: next-version
         run: |
-          # Get latest tag matching v* pattern, sorted by version number
           LAST_TAG=$(git tag --list "v*" --sort=-v:refname | head --lines=1)
 
           if [[ -z "$LAST_TAG" ]]; then
-            # No tags exist yet, start at v1
             NEXT_VERSION="v1"
           else
-            # Extract version number and increment
             VERSION_NUM=${LAST_TAG#v}
-            NEXT_NUM=$((VERSION_NUM + 1))
-            NEXT_VERSION="v${NEXT_NUM}"
+            NEXT_VERSION="v$((VERSION_NUM + 1))"
           fi
 
           echo "next-version=$NEXT_VERSION" >> "$GITHUB_OUTPUT"
@@ -68,8 +64,8 @@ jobs:
           git config --global user.email "${{ github.event.pusher.email }}"
           git config --global user.name "${{ github.event.pusher.name }}"
           git add .
-          git commit --message 'release: ${{ steps.vars.outputs.next-version }}'
-          git tag ${{ steps.vars.outputs.next-version }}
+          git commit --message 'release: ${{ steps.next-version.outputs.next-version }}'
+          git tag ${{ steps.next-version.outputs.next-version }}
           git push origin --tags
 
       - name: Create Release
@@ -78,8 +74,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: ${{ steps.vars.outputs.next-version }}
-          release_name: ${{ steps.vars.outputs.next-version }}
+          tag_name: ${{ steps.next-version.outputs.next-version }}
+          release_name: ${{ steps.next-version.outputs.next-version }}
           body: ""
           draft: false
           prerelease: false
