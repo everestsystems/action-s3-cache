@@ -47,50 +47,30 @@ jobs:
 
       - name: Output vars
         id: vars
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          LAST_TAG=$(git for-each-ref "refs/tags/v*" --sort=-committerdate:relative --format='%(refname)' --count=1 | sed "s/refs\/tags\///" )
-          LAST_TAG_CONTAINS_RC=false
-          IS_PRE_RELEASE=false
-          BUMP_TYPE="patch"
+          # Get latest tag matching v* pattern, sorted by version number
+          LAST_TAG=$(git tag --list "v*" --sort=-v:refname | head --lines=1)
 
-          if [[ $LAST_TAG == *"-rc"* ]]; then
-              LAST_TAG_CONTAINS_RC=true
-          fi
-
-          if [[ "${{ github.ref }}" == "refs/heads/develop" ]]; then
-              IS_PRE_RELEASE=true
-
-              if [[ $LAST_TAG_CONTAINS_RC == true ]]; then
-                  BUMP_TYPE=prerelease
-              else
-                  BUMP_TYPE=prepatch
-              fi
+          if [[ -z "$LAST_TAG" ]]; then
+            # No tags exist yet, start at v1
+            NEXT_VERSION="v1"
           else
-              BUMP_TYPE=patch
+            # Extract version number and increment
+            VERSION_NUM=${LAST_TAG#v}
+            NEXT_NUM=$((VERSION_NUM + 1))
+            NEXT_VERSION="v${NEXT_NUM}"
           fi
 
-          NEXT_VERSION="v$(npx semver "$LAST_TAG" -i $BUMP_TYPE --preid rc)"
-
-          echo "::set-output name=is-pre-release::$IS_PRE_RELEASE"
-          echo "::set-output name=next-version::$NEXT_VERSION"
+          echo "next-version=$NEXT_VERSION" >> "$GITHUB_OUTPUT"
 
       - name: Create tag
         run: |
           git config --global user.email "${{ github.event.pusher.email }}"
           git config --global user.name "${{ github.event.pusher.name }}"
           git add .
-          git commit -m 'release: ${{ steps.vars.outputs.next-version }}'
+          git commit --message 'release: ${{ steps.vars.outputs.next-version }}'
           git tag ${{ steps.vars.outputs.next-version }}
           git push origin --tags
-
-          if [[ "${{ steps.vars.outputs.is-pre-release }}" == false ]]; then
-            MAJOR_TAG=$(echo "${{ steps.vars.outputs.next-version }}" | sed "s/\..*//")
-
-            git tag $MAJOR_TAG -f -a -m "Update tag with version ${{ steps.vars.outputs.next-version }}"
-            git push origin tag $MAJOR_TAG --force
-          fi
 
       - name: Create Release
         id: create_release
@@ -102,5 +82,5 @@ jobs:
           release_name: ${{ steps.vars.outputs.next-version }}
           body: ""
           draft: false
-          prerelease: ${{ steps.vars.outputs.is-pre-release }}
+          prerelease: false
 
