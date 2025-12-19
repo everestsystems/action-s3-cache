@@ -37,60 +37,34 @@ jobs:
         with:
           go-version: ${{ needs.setup.outputs.go_version }}
 
-      - name: Build binary
+      - name: Build binaries
+        run: make build
+
+      - name: Determine next version
+        id: next-version
         run: |
-          env GOOS=linux GOARCH=amd64 go build -o dist/linux-x64
-          env GOOS=linux GOARCH=arm64 go build -o dist/linux-arm64
-          env GOOS=darwin GOARCH=amd64 go build -o dist/macos-x64
-          env GOOS=darwin GOARCH=arm64 go build -o dist/macos-arm64
-          env GOOS=windows GOARCH=amd64 go build -o dist/windows-x64
+          LAST_TAG=$(git tag --list "v*" --sort=-v:refname | head --lines=1)
 
-      - name: Output vars
-        id: vars
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          LAST_TAG=$(git for-each-ref "refs/tags/v*" --sort=-committerdate:relative --format='%(refname)' --count=1 | sed "s/refs\/tags\///" )
-          LAST_TAG_CONTAINS_RC=false
-          IS_PRE_RELEASE=false
-          BUMP_TYPE="patch"
-
-          if [[ $LAST_TAG == *"-rc"* ]]; then
-              LAST_TAG_CONTAINS_RC=true
-          fi
-
-          if [[ "${{ github.ref }}" == "refs/heads/develop" ]]; then
-              IS_PRE_RELEASE=true
-
-              if [[ $LAST_TAG_CONTAINS_RC == true ]]; then
-                  BUMP_TYPE=prerelease
-              else
-                  BUMP_TYPE=prepatch
-              fi
+          if [[ -z "$LAST_TAG" ]]; then
+            NEXT_VERSION="v1"
           else
-              BUMP_TYPE=patch
+            VERSION_NUM=${LAST_TAG#v}
+            NEXT_VERSION="v$((VERSION_NUM + 1))"
           fi
 
-          NEXT_VERSION="v$(npx semver "$LAST_TAG" -i $BUMP_TYPE --preid rc)"
+          echo "next-version=$NEXT_VERSION" >> "$GITHUB_OUTPUT"
 
-          echo "::set-output name=is-pre-release::$IS_PRE_RELEASE"
-          echo "::set-output name=next-version::$NEXT_VERSION"
+      - name: Update version references in README
+        run: make update-readme-version VERSION=${{ steps.next-version.outputs.next-version }}
 
       - name: Create tag
         run: |
           git config --global user.email "${{ github.event.pusher.email }}"
           git config --global user.name "${{ github.event.pusher.name }}"
           git add .
-          git commit -m 'release: ${{ steps.vars.outputs.next-version }}'
-          git tag ${{ steps.vars.outputs.next-version }}
+          git commit --message 'release: ${{ steps.next-version.outputs.next-version }}'
+          git tag ${{ steps.next-version.outputs.next-version }}
           git push origin --tags
-
-          if [[ "${{ steps.vars.outputs.is-pre-release }}" == false ]]; then
-            MAJOR_TAG=$(echo "${{ steps.vars.outputs.next-version }}" | sed "s/\..*//")
-
-            git tag $MAJOR_TAG -f -a -m "Update tag with version ${{ steps.vars.outputs.next-version }}"
-            git push origin tag $MAJOR_TAG --force
-          fi
 
       - name: Create Release
         id: create_release
@@ -98,9 +72,9 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: ${{ steps.vars.outputs.next-version }}
-          release_name: ${{ steps.vars.outputs.next-version }}
+          tag_name: ${{ steps.next-version.outputs.next-version }}
+          release_name: ${{ steps.next-version.outputs.next-version }}
           body: ""
           draft: false
-          prerelease: ${{ steps.vars.outputs.is-pre-release }}
+          prerelease: false
 
