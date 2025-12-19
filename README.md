@@ -92,8 +92,8 @@ The following example shows a simple pipeline using S3 Cache GitHub Action:
 
 This action uses pre-compiled Go binaries that are built and committed to version control automatically by CI.
 
-### Making changes
+- [ ] TODO Change to uploading built binaries to GitHub release assets instead of committing to version control (this would prevent bloating the repo size and history)
 
 1. Create a branch and make your code changes to the Go source files
 2. Open a PR targeting `develop`
-3. Once merged, CI will automatically build binaries for all platforms and create a pre-release (`vX.Y.Z-rcN`)
+3. Once merged, CI will automatically build binaries for all platforms and create a new release (`v1`, `v2`, `v3`, etc.)
