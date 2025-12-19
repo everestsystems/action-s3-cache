@@ -6,6 +6,7 @@ print-go-version:
 
 .PHONY: build
 build:
+	rm --recursive --force dist/
 	GOOS=linux GOARCH=amd64 go build -o dist/linux-x64
 	GOOS=linux GOARCH=arm64 go build -o dist/linux-arm64
 	GOOS=darwin GOARCH=amd64 go build -o dist/macos-x64

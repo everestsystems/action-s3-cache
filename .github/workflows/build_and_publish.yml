@@ -57,14 +57,14 @@ jobs:
       - name: Update version references in README
         run: make update-readme-version VERSION=${{ steps.next-version.outputs.next-version }}
 
-      - name: Create tag
+      - name: Commit and tag release
         run: |
           git config --global user.email "${{ github.event.pusher.email }}"
           git config --global user.name "${{ github.event.pusher.name }}"
           git add .
           git commit --message 'release: ${{ steps.next-version.outputs.next-version }}'
           git tag ${{ steps.next-version.outputs.next-version }}
-          git push origin --tags
+          git push origin develop --tags
 
       - name: Create Release
         id: create_release
