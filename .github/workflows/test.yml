@@ -14,7 +14,7 @@ env:
 
 jobs:
   setup:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     outputs:
       go_version: ${{ steps.go-version.outputs.version }}
     steps:
@@ -28,6 +28,7 @@ jobs:
           echo "version=$GO_VERSION" >> "$GITHUB_OUTPUT"
 
   test:
+    needs: setup
     name: Test on Linux
     runs-on: ubuntu-latest
     services:
