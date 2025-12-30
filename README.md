@@ -18,7 +18,7 @@ Changes:
 
 ```yml
 - name: Save cache
-  uses: everest/action-s3-cache@v5
+  uses: everest/action-s3-cache@v2
   with:
     action: put
     aws-region: us-east-1 # Or whatever region your bucket was created
@@ -32,7 +32,7 @@ Changes:
 
 ```yml
 - name: Retrieve cache
-  uses: everest/action-s3-cache@v5
+  uses: everest/action-s3-cache@v2
   with:
     action: get
     aws-region: us-east-1
@@ -44,7 +44,7 @@ Changes:
 
 ```yml
 - name: Clear cache
-  uses: everest/action-s3-cache@v5
+  uses: everest/action-s3-cache@v2
   with:
     action: delete
     aws-region: us-east-1
@@ -62,7 +62,7 @@ The following example shows a simple pipeline using S3 Cache GitHub Action:
   uses: actions/checkout@v2
 
 - name: Retrieve cache
-  uses: everest/action-s3-cache@v5
+  uses: everest/action-s3-cache@v2
   with:
     action: get
     aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
@@ -75,7 +75,7 @@ The following example shows a simple pipeline using S3 Cache GitHub Action:
   run: yarn
 
 - name: Save cache
-  uses: everest/action-s3-cache@v5
+  uses: everest/action-s3-cache@v2
   with:
     action: put
     aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
