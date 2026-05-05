@@ -1,25 +1,25 @@
 package main
 
 import (
-	"archive/tar"
-	"compress/gzip"
 	"io"
 	"os"
 	"path/filepath"
+	"runtime"
+	"sync"
+
+	"github.com/klauspost/compress/zip"
 )
 
-func Tar(filename string, artifacts []string) error {
+// Zip - Create .zip file and add dirs and files that match glob patterns
+func Zip(filename string, artifacts []string) error {
 	outFile, err := os.Create(filename)
 	if err != nil {
 		return err
 	}
 	defer outFile.Close()
 
-	gzw := gzip.NewWriter(outFile)
-	defer gzw.Close()
-
-	tw := tar.NewWriter(gzw)
-	defer tw.Close()
+	archive := zip.NewWriter(outFile)
+	defer archive.Close()
 
 	for _, pattern := range artifacts {
 		matches, err := filepath.Glob(pattern)
@@ -28,142 +28,109 @@ func Tar(filename string, artifacts []string) error {
 		}
 
 		for _, match := range matches {
-			filepath.Walk(match, func(file string, fi os.FileInfo, err error) error {
-				// return on any error
+			if err := filepath.Walk(match, func(path string, info os.FileInfo, walkErr error) error {
+				if walkErr != nil {
+					return walkErr
+				}
+
+				header, err := zip.FileInfoHeader(info)
 				if err != nil {
 					return err
 				}
 
-				// for symbolic link only add to the tar file list
-				link := file
-				if fi.Mode()&os.ModeSymlink != 0 {
-					var err error
-					link, err = os.Readlink(file)
-					if err != nil {
-						return err
-					}
-				}
+				header.Name = path
+				header.Method = zip.Deflate
 
-				// create a new dir/file header
-				header, err := tar.FileInfoHeader(fi, link)
+				writer, err := archive.CreateHeader(header)
 				if err != nil {
 					return err
 				}
-				header.Name = file
 
-				// write the header
-				if err := tw.WriteHeader(header); err != nil {
+				if info.IsDir() {
+					return nil
+				}
+
+				file, err := os.Open(path)
+				if err != nil {
 					return err
 				}
+				defer file.Close()
 
-				// copy file content only for regular files
-				if fi.Mode().IsRegular() {
-					// open files for taring
-					f, err := os.Open(file)
-					if err != nil {
-						return err
-					}
-
-					// copy file data into tar writer
-					if _, err := io.Copy(tw, f); err != nil {
-						return err
-					}
-
-					// manually close here after each file operation; defering would cause each file close
-					// to wait until all operations have completed.
-					f.Close()
-				}
-
-				return nil
-			})
+				_, err = io.Copy(writer, file)
+				return err
+			}); err != nil {
+				return err
+			}
 		}
 	}
 
 	return nil
 }
 
-func Untar(filename string) error {
-	f, err := os.Open(filename)
-
+// Unzip - Unzip all files and directories inside .zip file using a worker pool.
+func Unzip(filename string) error {
+	reader, err := zip.OpenReader(filename)
 	if err != nil {
 		return err
 	}
-	defer f.Close()
+	defer reader.Close()
 
-	gzr, err := gzip.NewReader(f)
-	if err != nil {
-		return err
-	}
-	defer gzr.Close()
-
-	tr := tar.NewReader(gzr)
-
-	for {
-		header, err := tr.Next()
-
-		switch {
-
-		// if no more files are found return
-		case err == io.EOF:
-			return nil
-
-		// return any other error
-		case err != nil:
+	// Create all directories up-front to avoid races between goroutines.
+	for _, file := range reader.File {
+		if err := os.MkdirAll(filepath.Dir(file.Name), os.ModePerm); err != nil {
 			return err
+		}
+		if file.FileInfo().IsDir() {
+			if err := os.MkdirAll(file.Name, os.ModePerm); err != nil {
+				return err
+			}
+		}
+	}
 
-		// if the header is nil, just skip it (not sure how this happens)
-		case header == nil:
+	sem := make(chan struct{}, runtime.NumCPU())
+	errCh := make(chan error, 1)
+	var wg sync.WaitGroup
+
+	for _, f := range reader.File {
+		if f.FileInfo().IsDir() {
 			continue
 		}
-
-		// the target location where the dir/file should be created
-		target := header.Name
-
-		// check the file type
-		switch header.Typeflag {
-
-		// if its a dir and it doesn't exist create it
-		case tar.TypeDir:
-			if _, err := os.Stat(target); err != nil {
-				if err := os.MkdirAll(target, 0755); err != nil {
-					return err
+		wg.Add(1)
+		sem <- struct{}{}
+		go func(zf *zip.File) {
+			defer wg.Done()
+			defer func() { <-sem }()
+			if err := extractZipFile(zf); err != nil {
+				select {
+				case errCh <- err:
+				default:
 				}
 			}
-
-		// if it's a file create it
-		case tar.TypeReg:
-			dir := filepath.Dir(target)
-			if _, err := os.Stat(dir); err != nil {
-				if err := os.MkdirAll(dir, 0755); err != nil {
-					return err
-				}
-			}
-
-			f, err := os.OpenFile(target, os.O_CREATE|os.O_RDWR, os.FileMode(header.Mode))
-			if err != nil {
-				return err
-			}
-
-			// copy over contents
-			if _, err := io.Copy(f, tr); err != nil {
-				return err
-			}
-
-			// manually close here after each file operation; defering would cause each file close
-			// to wait until all operations have completed.
-			f.Close()
-
-		case tar.TypeSymlink:
-			dir := filepath.Dir(target)
-			if _, err := os.Stat(dir); err != nil {
-				if err := os.MkdirAll(dir, 0755); err != nil {
-					return err
-				}
-			}
-
-			if err := os.Symlink(header.Linkname, target); err != nil {
-				return err
-			}
-		}
+		}(f)
 	}
+
+	wg.Wait()
+	select {
+	case err := <-errCh:
+		return err
+	default:
+		return nil
+	}
+}
+
+func extractZipFile(f *zip.File) error {
+	rc, err := f.Open()
+	if err != nil {
+		return err
+	}
+	defer rc.Close()
+
+	out, err := os.OpenFile(f.Name, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, f.Mode())
+	if err != nil {
+		return err
+	}
+	defer out.Close()
+
+	_, err = io.Copy(out, rc)
+	return err
 }

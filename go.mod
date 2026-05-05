@@ -6,6 +6,7 @@ require (
 	github.com/aws/aws-sdk-go-v2 v1.22.2
 	github.com/aws/aws-sdk-go-v2/config v1.23.0
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.42.1
+	github.com/klauspost/compress v1.17.8
 	github.com/pkg/errors v0.9.1
 )
 
