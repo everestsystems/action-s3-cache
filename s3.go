@@ -13,7 +13,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-// newS3Client creates an S3 client with optional custom endpoint support
+// newS3Client creates an S3 client with optional custom endpoint support.
 func newS3Client() (*s3.Client, error) {
 	cfg, err := config.LoadDefaultConfig(context.TODO())
 	if err != nil {
@@ -75,22 +75,21 @@ func GetObject(key, bucket string) error {
 		return err
 	}
 	defer result.Body.Close()
+
 	file, err := os.Create(key)
 	if err != nil {
 		log.Printf("Couldn't create file %v: %v\n", key, err)
 		return err
 	}
 	defer file.Close()
-	body, err := io.ReadAll(result.Body)
-	if err != nil {
-		log.Printf("Couldn't read object body from %v: %v\n", key, err)
+
+	if _, err := io.Copy(file, result.Body); err != nil {
+		log.Printf("Couldn't write object body to %v: %v\n", key, err)
+		return err
 	}
 
-	_, err = file.Write(body)
-	if err == nil {
-		log.Printf("Cache downloaded successfully, containing %d bytes", result.ContentLength)
-	}
-	return err
+	log.Printf("Cache downloaded successfully, containing %d bytes", result.ContentLength)
+	return nil
 }
 
 // DeleteObject - Delete object from s3 bucket
