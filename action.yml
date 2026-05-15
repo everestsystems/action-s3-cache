@@ -32,6 +32,13 @@ inputs:
   endpoint:
     description: "Custom S3 endpoint URL (for S3-compatible services like LocalStack)"
     required: false
+  compression:
+    description: >
+      Compression algorithm. Options: tar+gzip (default), zip, tar+zstd.
+      All three use parallel implementations. tar+zstd is fastest with best
+      compression ratio; tar+gzip is the default and most widely compatible.
+    required: false
+    default: tar+gzip
 runs:
   using: "composite"
   steps:
@@ -49,3 +56,4 @@ runs:
         OS: ${{ runner.os }}
         ARCH: ${{ runner.arch }}
         ENDPOINT: ${{ inputs.endpoint }}
+        COMPRESSION: ${{ inputs.compression }}
