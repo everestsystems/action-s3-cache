@@ -81,16 +81,14 @@ func GetObject(key, bucket string) error {
 		return err
 	}
 	defer file.Close()
-	body, err := io.ReadAll(result.Body)
+	written, err := io.Copy(file, result.Body)
 	if err != nil {
-		log.Printf("Couldn't read object body from %v: %v\n", key, err)
+		log.Printf("Couldn't write object body to %v: %v\n", key, err)
+		return err
 	}
 
-	_, err = file.Write(body)
-	if err == nil {
-		log.Printf("Cache downloaded successfully, containing %d bytes", result.ContentLength)
-	}
-	return err
+	log.Printf("Cache downloaded successfully, containing %d bytes", written)
+	return nil
 }
 
 // DeleteObject - Delete object from s3 bucket
