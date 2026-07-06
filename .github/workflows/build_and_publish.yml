@@ -59,16 +59,18 @@ jobs:
 
           git config --global user.email "${{ github.event.pusher.email }}"
           git config --global user.name "${{ github.event.pusher.name }}"
-          git checkout -b "$BRANCH"
+          git checkout -B "$BRANCH"
           git add .
           git commit --message "chore(release): ${{ steps.next-version.outputs.next-version }}"
-          git push origin "$BRANCH"
+          git push --force origin "$BRANCH"
 
-          gh pr create \
-            --title "chore(release): ${{ steps.next-version.outputs.next-version }}" \
-            --body "Automated release PR with built binaries for ${{ steps.next-version.outputs.next-version }}" \
-            --base develop \
-            --head "$BRANCH"
+          if [ -z "$(gh pr list --head "$BRANCH" --state open --json number --jq '.[].number')" ]; then
+            gh pr create \
+              --title "chore(release): ${{ steps.next-version.outputs.next-version }}" \
+              --body "Automated release PR with built binaries for ${{ steps.next-version.outputs.next-version }}" \
+              --base develop \
+              --head "$BRANCH"
+          fi
 
   release:
     runs-on: ubuntu-latest
