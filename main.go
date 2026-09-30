@@ -1,3 +1,4 @@
+// Package main implements an S3-backed cache for GitHub Actions.
 package main
 
 import (
@@ -7,6 +8,7 @@ import (
 	"strings"
 )
 
+//nolint:funlen // Keep the existing action dispatch flow; refactor in a follow-up.
 func main() {
 	action := Action{
 		Action:    os.Getenv("ACTION"),
@@ -23,7 +25,7 @@ func main() {
 
 	switch act := action.Action; act {
 	case PutAction:
-		if len(action.Artifacts[0]) <= 0 {
+		if len(action.Artifacts[0]) == 0 {
 			log.Fatal("No artifacts patterns provided")
 		}
 
@@ -42,7 +44,7 @@ func main() {
 			log.Fatal(err)
 		}
 
-		// Get and and unzip if object exists
+		// Get and unzip if object exists
 		if exists {
 			log.Printf("reading from s3")
 			if err := GetObject(action.Key, action.Bucket); err != nil {

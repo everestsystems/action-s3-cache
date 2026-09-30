@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 )
 
+//nolint:funlen // Keep the existing archive creation flow; refactor in a follow-up.
 func Tar(filename string, artifacts []string) error {
 	outFile, err := os.Create(filename)
 	if err != nil {
@@ -82,6 +83,7 @@ func Tar(filename string, artifacts []string) error {
 	return nil
 }
 
+//nolint:funlen // Keep the existing archive extraction flow; refactor in a follow-up.
 func Untar(filename string) error {
 	f, err := os.Open(filename)
 
@@ -102,7 +104,6 @@ func Untar(filename string) error {
 		header, err := tr.Next()
 
 		switch {
-
 		// if no more files are found return
 		case err == io.EOF:
 			return nil
@@ -121,7 +122,6 @@ func Untar(filename string) error {
 
 		// check the file type
 		switch header.Typeflag {
-
 		// if its a dir and it doesn't exist create it
 		case tar.TypeDir:
 			if _, err := os.Stat(target); err != nil {

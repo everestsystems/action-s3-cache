@@ -13,7 +13,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-// newS3Client creates an S3 client with optional custom endpoint support
+// newS3Client creates an S3 client with optional custom endpoint support.
 func newS3Client() (*s3.Client, error) {
 	cfg, err := config.LoadDefaultConfig(context.TODO())
 	if err != nil {
@@ -31,7 +31,7 @@ func newS3Client() (*s3.Client, error) {
 	return s3.NewFromConfig(cfg), nil
 }
 
-// PutObject - Upload object to s3 bucket
+// PutObject - Upload object to s3 bucket.
 func PutObject(key, bucket, s3Class string) error {
 	client, err := newS3Client()
 	if err != nil {
@@ -59,7 +59,7 @@ func PutObject(key, bucket, s3Class string) error {
 	return err
 }
 
-// GetObject - Get object from s3 bucket
+// GetObject - Get object from s3 bucket.
 func GetObject(key, bucket string) error {
 	client, err := newS3Client()
 	if err != nil {
@@ -91,7 +91,7 @@ func GetObject(key, bucket string) error {
 	return nil
 }
 
-// DeleteObject - Delete object from s3 bucket
+// DeleteObject - Delete object from s3 bucket.
 func DeleteObject(key, bucket string) error {
 	client, err := newS3Client()
 	if err != nil {
@@ -111,7 +111,7 @@ func DeleteObject(key, bucket string) error {
 	return err
 }
 
-// ObjectExists - Verify if object exists in s3
+// ObjectExists - Verify if object exists in s3.
 func ObjectExists(key, bucket string) (bool, error) {
 	client, err := newS3Client()
 	if err != nil {

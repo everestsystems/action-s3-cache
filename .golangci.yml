@@ -3,10 +3,39 @@ version: "2"
 linters:
   default: none
   enable:
+    - bidichk
+    - bodyclose
+    - copyloopvar
+    - dupl
+    - dupword
+    - errorlint
+    - funlen
+    - gocritic
+    - gocyclo
+    - godot
+    - goprintffuncname
     - govet
     - ineffassign
+    - misspell
+    - nakedret
+    - nilerr
+    - noctx
+    - nolintlint
+    - nonamedreturns
+    - paralleltest
+    - predeclared
+    - revive
+    - rowserrcheck
     - staticcheck
+    - testableexamples
+    - tparallel
+    - unconvert
+    - unparam
     - unused
+    - whitespace
+  settings:
+    dupl:
+      threshold: 100
 
 formatters:
   enable:
