@@ -90,6 +90,9 @@ The following example shows a simple pipeline using S3 Cache GitHub Action:
 
 ## Contributing
 
+Run `make fmt` to format Go source and `make lint` to check linting and formatting before opening a PR.
+Use `make lint-fix` to apply available automatic fixes. These commands use the pinned Go and golangci-lint versions.
+
 This action uses pre-compiled Go binaries that are built and committed to version control automatically by CI.
 
 - [ ] TODO Change to uploading built binaries to GitHub release assets instead of committing to version control (this would prevent bloating the repo size and history)
