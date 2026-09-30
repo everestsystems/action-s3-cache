@@ -62,7 +62,13 @@ func main() {
 			log.Fatal(err)
 		}
 	default:
-		log.Fatalf("Action \"%s\" is not allowed. Valid options are: [%s, %s, %s]", act, PutAction, DeleteAction, GetAction)
+		log.Fatalf(
+			"Action \"%s\" is not allowed. Valid options are: [%s, %s, %s]",
+			act,
+			PutAction,
+			DeleteAction,
+			GetAction,
+		)
 	}
 	log.Printf("caching process finished!")
 }
