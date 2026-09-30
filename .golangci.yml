@@ -1,0 +1,25 @@
+version: "2"
+
+linters:
+  default: none
+  enable:
+    - govet
+    - ineffassign
+    - staticcheck
+    - unused
+
+formatters:
+  enable:
+    - gofmt
+    - goimports
+    - golines
+  settings:
+    goimports:
+      local-prefixes:
+        - action-s3-cache
+    golines:
+      max-len: 100
+      # Struct tag reformatting is potentially disruptive, see: https://github.com/golangci/golines/#struct-tag-reformatting.
+      reformat-tags: false
+      # Preserve generated directives and avoid awkwardly wrapping prose comments.
+      shorten-comments: false
