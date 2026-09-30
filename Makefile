@@ -25,6 +25,18 @@ golangci-lint: $(LOCALBIN) ## Download the pinned golangci-lint version if neces
 		curl -sSfL https://golangci-lint.run/install.sh | sh -s -- -b $(LOCALBIN) $(GOLANGCI_LINT_VERSION); \
 	fi
 
+.PHONY: fmt
+fmt: golangci-lint ## Format Go source files
+	$(GOLANGCI_LINT) fmt
+
+.PHONY: lint
+lint: golangci-lint ## Run golangci-lint and check formatting
+	$(GOLANGCI_LINT) run
+
+.PHONY: lint-fix
+lint-fix: golangci-lint ## Run golangci-lint and apply fixes
+	$(GOLANGCI_LINT) run --fix
+
 .PHONY: build
 build:
 	rm --recursive --force dist/
