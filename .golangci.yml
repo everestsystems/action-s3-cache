@@ -1,0 +1,54 @@
+version: "2"
+
+linters:
+  default: none
+  enable:
+    - bidichk
+    - bodyclose
+    - copyloopvar
+    - dupl
+    - dupword
+    - errorlint
+    - funlen
+    - gocritic
+    - gocyclo
+    - godot
+    - goprintffuncname
+    - govet
+    - ineffassign
+    - misspell
+    - nakedret
+    - nilerr
+    - noctx
+    - nolintlint
+    - nonamedreturns
+    - paralleltest
+    - predeclared
+    - revive
+    - rowserrcheck
+    - staticcheck
+    - testableexamples
+    - tparallel
+    - unconvert
+    - unparam
+    - unused
+    - whitespace
+  settings:
+    dupl:
+      threshold: 100
+
+formatters:
+  enable:
+    - gofmt
+    - goimports
+    - golines
+  settings:
+    goimports:
+      local-prefixes:
+        - action-s3-cache
+    golines:
+      max-len: 100
+      # Struct tag reformatting is potentially disruptive, see: https://github.com/golangci/golines/#struct-tag-reformatting.
+      reformat-tags: false
+      # Preserve generated directives and avoid awkwardly wrapping prose comments.
+      shorten-comments: false

@@ -1,8 +1,41 @@
-GO_VERSION := $(shell grep '^go ' go.mod | cut -d' ' -f2)
+override GO_VERSION := $(shell grep '^go ' go.mod | cut -d' ' -f2)
+override GOLANGCI_LINT_VERSION := v2.6.2
+
+# Use the exact Go toolchain declared in go.mod for all Make commands.
+override GOTOOLCHAIN := go$(GO_VERSION)
+export GOTOOLCHAIN
+
+LOCALBIN ?= $(shell pwd)/bin
+override GOLANGCI_LINT := $(LOCALBIN)/golangci-lint
 
 .PHONY: print-go-version
 print-go-version:
 	@echo $(GO_VERSION)
+
+.PHONY: print-golangci-lint-version
+print-golangci-lint-version:
+	@echo $(GOLANGCI_LINT_VERSION)
+
+$(LOCALBIN):
+	mkdir -p $(LOCALBIN)
+
+.PHONY: golangci-lint
+golangci-lint: $(LOCALBIN) ## Download the pinned golangci-lint version if necessary
+	@if test "v$$($(GOLANGCI_LINT) version --short 2>/dev/null)" != "$(GOLANGCI_LINT_VERSION)"; then \
+		curl -sSfL https://golangci-lint.run/install.sh | sh -s -- -b $(LOCALBIN) $(GOLANGCI_LINT_VERSION); \
+	fi
+
+.PHONY: fmt
+fmt: golangci-lint ## Format Go source files
+	$(GOLANGCI_LINT) fmt
+
+.PHONY: lint
+lint: golangci-lint ## Run golangci-lint and check formatting
+	$(GOLANGCI_LINT) run
+
+.PHONY: lint-fix
+lint-fix: golangci-lint ## Run golangci-lint and apply fixes
+	$(GOLANGCI_LINT) run --fix
 
 .PHONY: build
 build:
