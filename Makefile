@@ -1,5 +1,5 @@
 override GO_VERSION := $(shell grep '^go ' go.mod | cut -d' ' -f2)
-override GOLANGCI_LINT_VERSION := v2.6.2
+override GOLANGCI_LINT_VERSION := v2.9.0
 
 # Use the exact Go toolchain declared in go.mod for all Make commands.
 override GOTOOLCHAIN := go$(GO_VERSION)
