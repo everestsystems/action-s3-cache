@@ -1,6 +1,6 @@
 module action-s3-cache
 
-go 1.25.9
+go 1.26.10
 
 require (
 	github.com/aws/aws-sdk-go-v2 v1.22.2
