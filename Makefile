@@ -1,5 +1,6 @@
 override GO_VERSION := $(shell grep '^go ' go.mod | cut -d' ' -f2)
 override GOLANGCI_LINT_VERSION := v2.9.0
+override GOVULNCHECK_VERSION := v1.9.0
 
 # Use the exact Go toolchain declared in go.mod for all Make commands.
 override GOTOOLCHAIN := go$(GO_VERSION)
@@ -7,6 +8,7 @@ export GOTOOLCHAIN
 
 LOCALBIN ?= $(shell pwd)/bin
 override GOLANGCI_LINT := $(LOCALBIN)/golangci-lint
+override GOVULNCHECK := $(LOCALBIN)/govulncheck
 
 .PHONY: print-go-version
 print-go-version:
@@ -16,6 +18,10 @@ print-go-version:
 print-golangci-lint-version:
 	@echo $(GOLANGCI_LINT_VERSION)
 
+.PHONY: print-govulncheck-version
+print-govulncheck-version:
+	@echo $(GOVULNCHECK_VERSION)
+
 $(LOCALBIN):
 	mkdir -p $(LOCALBIN)
 
@@ -23,6 +29,16 @@ $(LOCALBIN):
 golangci-lint: $(LOCALBIN) ## Download the pinned golangci-lint version if necessary
 	@if test "v$$($(GOLANGCI_LINT) version --short 2>/dev/null)" != "$(GOLANGCI_LINT_VERSION)"; then \
 		curl -sSfL https://golangci-lint.run/install.sh | sh -s -- -b $(LOCALBIN) $(GOLANGCI_LINT_VERSION); \
+	fi
+
+override GOVULNCHECK_PINNED_MODULE := golang.org/x/vuln[[:space:]]$(GOVULNCHECK_VERSION)[[:space:]]
+override GOVULNCHECK_PINNED_GO := : go$(GO_VERSION)$$
+
+.PHONY: install-govulncheck
+install-govulncheck: $(LOCALBIN) ## Download the pinned govulncheck version if necessary
+	@if ! go version -m $(GOVULNCHECK) 2>/dev/null | grep --quiet "$(GOVULNCHECK_PINNED_MODULE)" \
+		|| ! go version $(GOVULNCHECK) 2>/dev/null | grep --quiet "$(GOVULNCHECK_PINNED_GO)"; then \
+		GOBIN=$(LOCALBIN) go install golang.org/x/vuln/cmd/govulncheck@$(GOVULNCHECK_VERSION); \
 	fi
 
 .PHONY: fmt
@@ -36,6 +52,10 @@ lint: golangci-lint ## Run golangci-lint and check formatting
 .PHONY: lint-fix
 lint-fix: golangci-lint ## Run golangci-lint and apply fixes
 	$(GOLANGCI_LINT) run --fix
+
+.PHONY: govulncheck
+govulncheck: install-govulncheck ## Check for known vulnerabilities
+	$(GOVULNCHECK) ./...
 
 .PHONY: build
 build:
