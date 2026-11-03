@@ -92,6 +92,7 @@ The following example shows a simple pipeline using S3 Cache GitHub Action:
 
 Run `make fmt` to format Go source and `make lint` to check linting and formatting before opening a PR.
 Use `make lint-fix` to apply available automatic fixes. These commands use the pinned Go and golangci-lint versions.
+Run `make govulncheck` to check for known vulnerabilities, including in the standard library of the pinned Go version.
 
 This action uses pre-compiled Go binaries that are built and committed to version control automatically by CI.
 
