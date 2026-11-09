@@ -81,7 +81,7 @@ The following example shows a simple pipeline using S3 Cache GitHub Action:
 
 ```yml
 - name: Checkout
-  uses: actions/checkout@v2
+  uses: actions/checkout@v7
 
 - name: Retrieve cache
   uses: everest/action-s3-cache@v7
