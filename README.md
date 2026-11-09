@@ -52,6 +52,27 @@ Changes:
     key: ${{ hashFiles('yarn.lock') }}
 ```
 
+### S3-compatible endpoints
+
+Set `endpoint` to use an S3-compatible service such as LocalStack or MinIO.
+Uploads send CRC32 checksums by default; set `AWS_REQUEST_CHECKSUM_CALCULATION` to `when_required`
+if your service doesn't support them.
+
+```yml
+- name: Save cache
+  uses: everest/action-s3-cache@v7
+  env:
+    AWS_REQUEST_CHECKSUM_CALCULATION: when_required
+  with:
+    action: put
+    aws-region: us-east-1
+    bucket: your-bucket
+    endpoint: http://localhost:4566
+    key: ${{ hashFiles('yarn.lock') }}
+    artifacts: |
+      node_modules*
+```
+
 ## Example
 
 The following example shows a simple pipeline using S3 Cache GitHub Action:
