@@ -54,10 +54,10 @@ Changes:
 
 ### S3-compatible endpoints
 
-Set `endpoint` to use a different S3-compatible service such as LocalStack.
-Uploads send [CRC32 checksums](https://en.wikipedia.org/wiki/CRC-32) by default; set `AWS_REQUEST_CHECKSUM_CALCULATION` to `when_required`
+Set `endpoint` to use an S3-compatible service other than Amazon S3, such as LocalStack.
+Uploads send CRC32 checksums by default; set `AWS_REQUEST_CHECKSUM_CALCULATION` to `when_required`
 if your service doesn't support them.
-Read more [here](https://docs.aws.amazon.com/sdkref/latest/guide/feature-dataintegrity.html).
+See the AWS SDK guide on [data integrity protections](https://docs.aws.amazon.com/sdkref/latest/guide/feature-dataintegrity.html).
 
 ```yml
 - name: Save cache
