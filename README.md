@@ -30,8 +30,11 @@ Changes:
 
 ### Retrieving artifacts
 
+The `cache-hit` output is `true` when a cache was restored for the key and `false` otherwise.
+
 ```yml
 - name: Retrieve cache
+  id: cache
   uses: everest/action-s3-cache@v9
   with:
     action: get
@@ -84,6 +87,7 @@ The following example shows a simple pipeline using S3 Cache GitHub Action:
   uses: actions/checkout@v7
 
 - name: Retrieve cache
+  id: cache
   uses: everest/action-s3-cache@v9
   with:
     action: get
@@ -97,6 +101,7 @@ The following example shows a simple pipeline using S3 Cache GitHub Action:
   run: yarn
 
 - name: Save cache
+  if: steps.cache.outputs.cache-hit != 'true'
   uses: everest/action-s3-cache@v9
   with:
     action: put

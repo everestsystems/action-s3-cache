@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strconv"
 	"strings"
 )
 
@@ -39,24 +40,31 @@ func main() {
 			log.Fatal(err)
 		}
 	case GetAction:
-		exists, err := ObjectExists(action.Key, action.Bucket)
+		hit, err := restore(s3Store{bucket: action.Bucket}, action.Key)
 		if err != nil {
 			log.Fatal(err)
 		}
 
-		// Get and unzip if object exists
-		if exists {
-			log.Printf("reading from s3")
-			if err := GetObject(action.Key, action.Bucket); err != nil {
-				log.Fatal(err)
-			}
-
+		if hit {
 			log.Printf("starting the untar process")
 			if err := Untar(action.Key); err != nil {
 				log.Fatal(err)
 			}
 		} else {
 			log.Printf("No caches found for the following key: %s", action.Key)
+		}
+
+		output, err := os.OpenFile(os.Getenv(gitHubOutputEnv), appendOnly, unusedFileMode)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		if err := writeOutput(output, cacheHitOutput, strconv.FormatBool(hit)); err != nil {
+			log.Fatal(err)
+		}
+
+		if err := output.Close(); err != nil {
+			log.Fatal(err)
 		}
 	case DeleteAction:
 		log.Printf("deleting from s3")

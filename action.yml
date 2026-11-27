@@ -32,10 +32,15 @@ inputs:
   endpoint:
     description: "Custom S3 endpoint URL (for S3-compatible services like LocalStack)"
     required: false
+outputs:
+  cache-hit:
+    description: "Whether the get action restored a cache for the key"
+    value: ${{ steps.cache.outputs.cache-hit }}
 runs:
   using: "composite"
   steps:
-    - run: $GITHUB_ACTION_PATH/entrypoint.sh
+    - id: cache
+      run: $GITHUB_ACTION_PATH/entrypoint.sh
       shell: bash
       env:
         ACTION: ${{ inputs.action }}
