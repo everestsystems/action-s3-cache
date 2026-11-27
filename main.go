@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strconv"
 	"strings"
 )
 
@@ -49,12 +50,21 @@ func main() {
 			if err := Untar(action.Key); err != nil {
 				log.Fatal(err)
 			}
-
-			if err := appendGitHubOutput("cache-hit", "true"); err != nil {
-				log.Fatal(err)
-			}
 		} else {
 			log.Printf("No caches found for the following key: %s", action.Key)
+		}
+
+		output, err := os.OpenFile(os.Getenv(gitHubOutputEnv), appendOnly, unusedFileMode)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		if err := writeOutput(output, cacheHitOutput, strconv.FormatBool(hit)); err != nil {
+			log.Fatal(err)
+		}
+
+		if err := output.Close(); err != nil {
+			log.Fatal(err)
 		}
 	case DeleteAction:
 		log.Printf("deleting from s3")
@@ -71,15 +81,4 @@ func main() {
 		)
 	}
 	log.Printf("caching process finished!")
-}
-
-func appendGitHubOutput(name, value string) error {
-	file, err := os.OpenFile(os.Getenv("GITHUB_OUTPUT"), os.O_APPEND|os.O_WRONLY, 0)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-
-	_, err = fmt.Fprintf(file, "%s=%s\n", name, value)
-	return err
 }
