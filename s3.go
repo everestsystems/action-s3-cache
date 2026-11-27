@@ -133,3 +133,16 @@ func ObjectExists(key, bucket string) (bool, error) {
 
 	return true, nil
 }
+
+type s3Store struct {
+	bucket string
+}
+
+func (s s3Store) Exists(key string) (bool, error) {
+	return ObjectExists(key, s.bucket)
+}
+
+func (s s3Store) Download(key string) error {
+	log.Printf("reading from s3")
+	return GetObject(key, s.bucket)
+}

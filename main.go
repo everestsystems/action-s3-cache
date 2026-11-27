@@ -39,20 +39,18 @@ func main() {
 			log.Fatal(err)
 		}
 	case GetAction:
-		exists, err := ObjectExists(action.Key, action.Bucket)
+		hit, err := restore(s3Store{bucket: action.Bucket}, action.Key)
 		if err != nil {
 			log.Fatal(err)
 		}
 
-		// Get and unzip if object exists
-		if exists {
-			log.Printf("reading from s3")
-			if err := GetObject(action.Key, action.Bucket); err != nil {
+		if hit {
+			log.Printf("starting the untar process")
+			if err := Untar(action.Key); err != nil {
 				log.Fatal(err)
 			}
 
-			log.Printf("starting the untar process")
-			if err := Untar(action.Key); err != nil {
+			if err := appendGitHubOutput("cache-hit", "true"); err != nil {
 				log.Fatal(err)
 			}
 		} else {
@@ -73,4 +71,15 @@ func main() {
 		)
 	}
 	log.Printf("caching process finished!")
+}
+
+func appendGitHubOutput(name, value string) error {
+	file, err := os.OpenFile(os.Getenv("GITHUB_OUTPUT"), os.O_APPEND|os.O_WRONLY, 0)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	_, err = fmt.Fprintf(file, "%s=%s\n", name, value)
+	return err
 }
